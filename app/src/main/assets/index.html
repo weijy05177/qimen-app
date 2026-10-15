@@ -50,6 +50,16 @@ button:active { opacity: 0.7; }
   border: 1px solid #333;
 }
 .mode-btn.on { background: #2d5a8e; color: #fff; border-color: #2d7ef7; }
+
+/* 拼音子选项：单拼 / 双拼 */
+.sub-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.sub-btn {
+  flex: 1; padding: 8px; border-radius: 8px;
+  background: #222; color: #666; border: 1px solid #333;
+  font-size: 13px; text-align: center;
+}
+.sub-btn.on { background: #1f6b3a; color: #fff; border-color: #2eb85c; }
+
 .tone-row { display: flex; gap: 6px; margin-bottom: 6px; }
 .tone-btn {
   flex: 1; padding: 8px; border-radius: 8px;
@@ -90,6 +100,11 @@ button:active { opacity: 0.7; }
 <div class="page" id="page-train">
   <div id="display-area"><div id="display-text"></div></div>
   <div class="mode-row" id="mode-row"></div>
+  <!-- 拼音子选项：只在“拼音混合”模式下显示 -->
+  <div class="sub-row" id="pinyin-options" style="display:none;">
+    <div class="sub-btn on" data-opt="single">单拼</div>
+    <div class="sub-btn on" data-opt="double">双拼</div>
+  </div>
   <div class="tone-row" id="tone-row">
     <div class="tone-btn" data-tone="0">一声 ˉ</div>
     <div class="tone-btn" data-tone="1">二声 ˊ</div>
@@ -171,6 +186,17 @@ const TONE_TO_BASE = {
 const UMLAUT_TO_U = { "ü":"u","ǖ":"ū","ǘ":"ú","ǚ":"ǔ","ǜ":"ù" };
 const UMLAUT_SONORANTS = new Set(["j","q","x","y"]);
 
+// 元音字母集合（含带声调形式）
+const VOWEL_CHARS = new Set([
+  "a","o","e","i","u","ü",
+  "ā","á","ǎ","à",
+  "ō","ó","ǒ","ò",
+  "ē","é","ě","è",
+  "ī","í","ǐ","ì",
+  "ū","ú","ǔ","ù",
+  "ǖ","ǘ","ǚ","ǜ"
+]);
+
 function removeTone(text) {
   return [...text].map(c => TONE_TO_BASE[c] || c).join("");
 }
@@ -185,6 +211,12 @@ function applySpelling(sm, ymTone) {
   }
   return sm + ymTone;
 }
+// 数一个拼音里元音字母的个数
+function countVowels(str) {
+  let n = 0;
+  for (const ch of str) if (VOWEL_CHARS.has(ch)) n++;
+  return n;
+}
 
 // ============ 状态 ============
 const state = {
@@ -192,6 +224,8 @@ const state = {
   selectedSM: new Set(SHENGMU),
   selectedYM: new Set(Object.keys(YUNMU_TONES)),
   tones: [true, true, true, true],
+  pinyinSingle: true,   // 单拼
+  pinyinDouble: true,   // 双拼
   pool: [],
   queue: [],
   current: "",
@@ -240,6 +274,21 @@ Object.entries(MODE_NAMES).forEach(([k, name]) => {
   modeRow.appendChild(el);
 });
 
+// ============ 训练页：单拼 / 双拼 子选项 ============
+document.querySelectorAll("#pinyin-options .sub-btn").forEach(el => {
+  el.onclick = () => {
+    const opt = el.dataset.opt;
+    if (opt === "single") {
+      state.pinyinSingle = !state.pinyinSingle;
+      el.classList.toggle("on", state.pinyinSingle);
+    } else {
+      state.pinyinDouble = !state.pinyinDouble;
+      el.classList.toggle("on", state.pinyinDouble);
+    }
+    if (state.mode === "pinyin") rebuildPool();
+  };
+});
+
 // ============ 训练页：声调按钮 ============
 const toneRow = document.getElementById("tone-row");
 document.querySelectorAll(".tone-btn").forEach(el => {
@@ -274,7 +323,14 @@ function buildPoolForMode(mode) {
     sms.forEach(sm => {
       yms.forEach(ym => {
         YUNMU_TONES[ym].forEach(t => {
-          if (isValidSyllable(sm, t)) out.push(applySpelling(sm, t));
+          if (!isValidSyllable(sm, t)) return;
+          const result = applySpelling(sm, t);
+          const vc = countVowels(result);
+          // 单拼：只有 1 个元音字母
+          if (vc === 1 && !state.pinyinSingle) return;
+          // 双拼：有 2 个或更多元音字母
+          if (vc >= 2 && !state.pinyinDouble) return;
+          out.push(result);
         });
       });
     });
@@ -318,7 +374,7 @@ function adjustFont() {
 function rebuildPool() {
   state.pool = buildPoolForMode(state.mode);
   if (!state.pool.length) {
-    alert("当前模式下没有可用的拼音，请检查配置。");
+    alert("当前配置下没有可用的拼音，请检查勾选或子选项。");
     return false;
   }
   refillQueue();
@@ -332,6 +388,9 @@ function switchMode(mode) {
     el.classList.toggle("on", el.dataset.value === mode);
   });
   toneRow.classList.toggle("disabled", mode !== "yunmu_tone");
+  // 只在“拼音混合”模式下显示 单拼/双拼
+  document.getElementById("pinyin-options").style.display =
+    (mode === "pinyin") ? "flex" : "none";
   rebuildPool();
 }
 

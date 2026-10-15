@@ -19,10 +19,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Android SDK components
+      - name: Locate and use preinstalled Android SDK
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          # 1. 查找 sdkmanager 的绝对路径
+          SDKMANAGER_PATH=$(find $ANDROID_SDK_ROOT -name sdkmanager -type f | head -n 1)
+          echo "SDKMANAGER_PATH=$SDKMANAGER_PATH" >> $GITHUB_ENV
+
+          # 2. 使用完整路径接受许可协议
+          yes | $SDKMANAGER_PATH --licenses > /dev/null
+
+          # 3. 使用完整路径安装构建组件
+          $SDKMANAGER_PATH "platforms;android-34" "build-tools;34.0.0"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4

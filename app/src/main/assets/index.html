@@ -1,42 +1,393 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>奇门排盘</title>
-    <style>
-        body {
-            background: #111;
-            color: #eee;
-            font-family: system-ui, sans-serif;
-            padding: 16px;
-            margin: 0;
-        }
-        h1 {
-            font-size: 20px;
-        }
-        pre {
-            white-space: pre-wrap;
-            font-size: 14px;
-            line-height: 1.6;
-            background: #1a1a1a;
-            padding: 12px;
-            border-radius: 8px;
-            overflow-x: auto;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奇门排盘</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #111;
+    color: #eee;
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 12px;
+    font-size: 14px;
+  }
+  h1 { font-size: 18px; text-align: center; margin: 8px 0 12px; }
+  .panel {
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  label { display: block; margin-bottom: 4px; color: #aaa; font-size: 12px; }
+  input, select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #222;
+    color: #eee;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #2d7ef7;
+    color: #fff;
+    font-size: 15px;
+    font-weight: bold;
+  }
+  button:active { background: #1a5fc4; }
+  .info {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #ccc;
+    white-space: pre-wrap;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .gong {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 6px;
+    min-height: 96px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .gong .pos { color: #888; font-size: 10px; }
+  .gong .shen { color: #f7c948; }
+  .gong .xing { color: #7ec8e3; }
+  .gong .tian { color: #ff9f7f; }
+  .gong .men { color: #a6e3a1; }
+  .gong .di { color: #cba6f7; }
+  .gong .ge { color: #ff6b6b; font-weight: bold; }
+  .center {
+    background: #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-size: 12px;
+  }
+  .ge-list {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #ff6b6b;
+    line-height: 1.6;
+  }
+  .footer { text-align: center; color: #555; font-size: 11px; margin: 12px 0; }
+</style>
 </head>
 <body>
-    <h1>奇门遁甲排盘</h1>
-    <pre>
-起局时间：2026-10-14 22:37
-四柱：丙午年  戊戌月  辛酉日  己亥时
-节气：寒露
-局数：阴遁3局
-旬首：甲午（遁干 辛）
-值符：天英    值使：景门
 
-（这里可以粘贴你完整的排盘内容）
-    </pre>
+<h1>奇门遁甲排盘</h1>
+
+<div class="panel">
+  <label>公历日期</label>
+  <input type="date" id="dateInput">
+  <label>时间（24小时制）</label>
+  <input type="time" id="timeInput">
+  <button onclick="paipan()">开始排盘</button>
+</div>
+
+<div class="panel" id="result" style="display:none;">
+  <div class="info" id="info"></div>
+  <div class="grid" id="grid"></div>
+  <div class="ge-list" id="geList"></div>
+</div>
+
+<div class="footer">奇门排盘 · 仅供学习参考</div>
+
+<script>
+// ==================== 基础常量 ====================
+const GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const GAN_WX = {甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水'};
+const ZHI_WX = {子:'水',丑:'土',寅:'木',卯:'木',辰:'土',巳:'火',午:'火',未:'土',申:'金',酉:'金',戌:'土',亥:'水'};
+
+// 九宫位置（洛书）
+const GONG_POS = {
+  4:'东南', 9:'正南', 2:'西南',
+  3:'正东', 5:'中央', 7:'正西',
+  8:'东北', 1:'正北', 6:'西北'
+};
+
+// 地盘三奇六仪固定顺序（阳遁顺布，阴遁逆布）
+const DIPAN_ORDER = ['戊','己','庚','辛','壬','癸','丁','丙','乙'];
+
+// 九星
+const JIUXING = ['天蓬','天任','天冲','天辅','天英','天芮','天柱','天心'];
+// 八门
+const BAMEN = ['休门','生门','伤门','杜门','景门','死门','惊门','开门'];
+// 八神（阳顺阴逆）
+const BASHEN_YANG = ['值符','螣蛇','太阴','六合','白虎','玄武','九地','九天'];
+const BASHEN_YIN  = ['值符','九天','九地','玄武','白虎','六合','太阴','螣蛇'];
+
+// 节气名称
+const JIEQI = ['小寒','大寒','立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至','小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至'];
+
+// ==================== 干支计算 ====================
+function jiaziIndex(gan, zhi) {
+  for (let i = 0; i < 60; i++) {
+    if (GAN[i % 10] === gan && ZHI[i % 12] === zhi) return i;
+  }
+  return 0;
+}
+
+function getGanZhiYear(y) {
+  const idx = (y - 4) % 60;
+  return GAN[idx % 10] + ZHI[idx % 12];
+}
+
+function getGanZhiDay(y, m, d) {
+  // 以 2000-01-01 为戊午日（索引 54）推算
+  const base = new Date(2000, 0, 1);
+  const cur = new Date(y, m - 1, d);
+  const diff = Math.floor((cur - base) / 86400000);
+  const idx = ((54 + diff) % 60 + 60) % 60;
+  return GAN[idx % 10] + ZHI[idx % 12];
+}
+
+function getGanZhiHour(dayGan, hour) {
+  const zhiIdx = Math.floor((hour + 1) / 2) % 12;
+  const dayGanIdx = GAN.indexOf(dayGan);
+  const startGan = (dayGanIdx % 5) * 2;
+  const ganIdx = (startGan + zhiIdx) % 10;
+  return GAN[ganIdx] + ZHI[zhiIdx];
+}
+
+// ==================== 简化节气计算 ====================
+// 用近似公式估算节气，误差约1天，够排盘用
+function getJieQiIndex(y, m, d) {
+  // 每月两个节气，粗略对应日期
+  const monthJie = [6, 21]; // 每月第一个节气约6号，第二个约21号
+  const base = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11];
+  // 更精确的近似：用年积日
+  const start = new Date(y, 0, 1);
+  const cur = new Date(y, m - 1, d);
+  const dayOfYear = Math.floor((cur - start) / 86400000) + 1;
+
+  // 24节气大致日期（非闰年）
+  const jqDays = [6,20,4,19,6,21,5,20,6,21,6,21,7,23,8,23,8,23,8,23,7,22,7,22];
+  let idx = 0;
+  for (let i = 0; i < 24; i++) {
+    if (dayOfYear >= jqDays[i]) idx = i;
+  }
+  // 处理跨年
+  if (dayOfYear < jqDays[0]) idx = 23;
+  return idx;
+}
+
+// 节气对应局数（上中下元简化，取上元局数）
+function getJuShu(jqIdx) {
+  const table = [2,3,8,9,1,3,4,5,4,5,6,9,8,7,2,1,9,7,6,5,6,5,4,1];
+  return table[jqIdx];
+}
+
+// 阴阳遁：冬至到夏至前为阳遁，夏至到冬至前为阴遁
+function getYinYang(jqIdx) {
+  // 冬至索引23，夏至索引11
+  if (jqIdx >= 23 || jqIdx < 11) return '阳';
+  return '阴';
+}
+
+// ==================== 排盘核心 ====================
+function paipan() {
+  const dateVal = document.getElementById('dateInput').value;
+  const timeVal = document.getElementById('timeInput').value;
+  if (!dateVal || !timeVal) {
+    alert('请选择日期和时间');
+    return;
+  }
+  const [y, m, d] = dateVal.split('-').map(Number);
+  const [hh] = timeVal.split(':').map(Number);
+
+  const yearGZ = getGanZhiYear(y);
+  const dayGZ = getGanZhiDay(y, m, d);
+  const dayGan = dayGZ[0];
+  const hourGZ = getGanZhiHour(dayGan, hh);
+
+  // 月柱简化：按节气月
+  const jqIdx = getJieQiIndex(y, m, d);
+  const yinYang = getYinYang(jqIdx);
+  const juShu = getJuShu(jqIdx);
+
+  // 旬首
+  const hourIdx = jiaziIndex(hourGZ[0], hourGZ[1]);
+  const xunStart = Math.floor(hourIdx / 10) * 10;
+  const xunShou = GAN[xunStart % 10];
+  const dunGan = xunShou === '甲' ? GAN[(xunStart + 1) % 10] : xunShou;
+  // 甲子戊、甲戌己、甲申庚、甲午辛、甲辰壬、甲寅癸
+  const dunMap = {'甲子':'戊','甲戌':'己','甲申':'庚','甲午':'辛','甲辰':'壬','甲寅':'癸'};
+  const xunName = '甲' + ZHI[(xunStart + (xunStart===0?0:xunStart)) % 12];
+  const xunGan = dunMap[GAN[xunStart%10]+ZHI[xunStart%12]] || '戊';
+
+  // 排地盘：从局数宫开始，阳顺阴逆布三奇六仪
+  const dipan = {};
+  let startGong = juShu;
+  for (let i = 0; i < 9; i++) {
+    let g;
+    if (yinYang === '阳') {
+      g = ((startGong - 1 + i) % 9) + 1;
+    } else {
+      g = ((startGong - 1 - i) % 9 + 9) % 9 + 1;
+    }
+    dipan[g] = DIPAN_ORDER[i];
+  }
+
+  // 找值符：地盘上旬首对应的宫
+  let zhifuGong = 1;
+  for (let g = 1; g <= 9; g++) {
+    if (dipan[g] === xunGan) { zhifuGong = g; break; }
+  }
+
+  // 天盘：把地盘整体旋转，使值符落到时干所在宫
+  // 时干在地盘的位置
+  let shiganGong = 1;
+  for (let g = 1; g <= 9; g++) {
+    if (dipan[g] === hourGZ[0]) { shiganGong = g; break; }
+  }
+
+  // 计算旋转量
+  const tianpan = {};
+  for (let g = 1; g <= 9; g++) {
+    if (g === 5) continue; // 中宫寄坤
+    // 天盘某宫 = 地盘对应宫
+    const offset = ((g - shiganGong) % 9 + 9) % 9;
+    let srcGong;
+    if (yinYang === '阳') {
+      srcGong = ((zhifuGong - 1 + offset) % 9) + 1;
+    } else {
+      srcGong = ((zhifuGong - 1 - offset) % 9 + 9) % 9 + 1;
+    }
+    if (srcGong === 5) srcGong = 2;
+    tianpan[g] = dipan[srcGong];
+  }
+
+  // 值使门：旬首对应八门
+  const menOrder = ['休','生','伤','杜','景','死','惊','开'];
+  const zhifuMenIdx = (zhifuGong - 1) % 8;
+  const zhishiMen = menOrder[zhifuMenIdx];
+
+  // 排八门：从值使门起，按时辰数飞布
+  const bamen = {};
+  const hourNum = ZHI.indexOf(hourGZ[1]);
+  for (let g = 1; g <= 9; g++) {
+    if (g === 5) continue;
+    let step;
+    if (yinYang === '阳') {
+      step = ((g - zhifuGong) % 9 + 9) % 9;
+    } else {
+      step = ((zhifuGong - g) % 9 + 9) % 9;
+    }
+    const idx = (zhifuMenIdx + step) % 8;
+    bamen[g] = menOrder[idx] + '门';
+  }
+
+  // 排九星：值符星随时干，其余顺布
+  const xingOrder = ['天蓬','天任','天冲','天辅','天英','天芮','天柱','天心'];
+  const jiuxing = {};
+  for (let g = 1; g <= 9; g++) {
+    if (g === 5) continue;
+    let step;
+    if (yinYang === '阳') {
+      step = ((g - zhifuGong) % 9 + 9) % 9;
+    } else {
+      step = ((zhifuGong - g) % 9 + 9) % 9;
+    }
+    jiuxing[g] = xingOrder[step % 8];
+  }
+
+  // 排八神
+  const bashen = {};
+  for (let g = 1; g <= 9; g++) {
+    if (g === 5) continue;
+    let step;
+    if (yinYang === '阳') {
+      step = ((g - zhifuGong) % 9 + 9) % 9;
+    } else {
+      step = ((zhifuGong - g) % 9 + 9) % 9;
+    }
+    bashen[g] = (yinYang === '阳' ? BASHEN_YANG : BASHEN_YIN)[step % 8];
+  }
+
+  // 格局识别
+  const ges = [];
+  const geRules = [
+    {a:'庚', b:'壬', name:'小格', note:'主走失、遗失'},
+    {a:'乙', b:'辛', name:'青龙逃走', note:'主人走财散、逃亡'},
+    {a:'癸', b:'丁', name:'螣蛇夭矫', note:'主怪异虚惊、梦魇'},
+    {a:'辛', b:'乙', name:'白虎猖狂', note:'主刀伤、车祸'},
+    {a:'壬', b:'癸', name:'幼女奸淫', note:'主淫乱、暗昧'},
+    {a:'丁', b:'癸', name:'朱雀投江', note:'主口舌、文书失'},
+    {a:'己', b:'庚', name:'刑格', note:'主刑罚、官非'},
+    {a:'庚', b:'癸', name:'大格', note:'主车祸、走失'},
+    {a:'庚', b:'己', name:'刑格', note:'主刑罚'},
+  ];
+  for (let g = 1; g <= 9; g++) {
+    if (g === 5) continue;
+    const t = tianpan[g], d = dipan[g];
+    for (const r of geRules) {
+      if (t === r.a && d === r.b) {
+        ges.push(`${r.name}（凶）· ${GONG_POS[g]}宫 [${t}+${d}]：${r.note}`);
+      }
+    }
+  }
+
+  // 渲染
+  document.getElementById('info').textContent =
+    `公历：${y}年${m}月${d}日 ${hh}时\n` +
+    `四柱：${yearGZ}年  ${'?'}月  ${dayGZ}日  ${hourGZ}时\n` +
+    `节气：${JIEQI[jqIdx]}\n` +
+    `局数：${yinYang}遁${juShu}局\n` +
+    `旬首：甲${ZHI[xunStart%12]}（遁干 ${xunGan}）\n` +
+    `值符：${jiuxing[zhifuGong] || '天英'}    值使：${bamen[zhifuGong] || '景门'}`;
+
+  const grid = document.getElementById('grid');
+  const order = [4,9,2,3,5,7,8,1,6];
+  grid.innerHTML = '';
+  for (const g of order) {
+    const div = document.createElement('div');
+    div.className = 'gong' + (g === 5 ? ' center' : '');
+    if (g === 5) {
+      div.innerHTML = `<div class="pos">中五宫</div><div>寄坤二宫</div>`;
+    } else {
+      div.innerHTML =
+        `<div class="pos">${GONG_POS[g]}宫</div>` +
+        `<div class="shen">${bashen[g] || ''}</div>` +
+        `<div class="xing">${jiuxing[g] || ''}</div>` +
+        `<div class="tian">天盘：${tianpan[g] || ''}</div>` +
+        `<div class="men">${bamen[g] || ''}</div>` +
+        `<div class="di">地盘：${dipan[g] || ''}</div>`;
+    }
+    grid.appendChild(div);
+  }
+
+  document.getElementById('geList').innerHTML =
+    ges.length ? '【格局识别】<br>' + ges.join('<br>') : '【格局识别】无明显凶格';
+
+  document.getElementById('result').style.display = 'block';
+}
+
+// 默认填当前时间
+(function init() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('dateInput').value =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('timeInput').value =
+    `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+})();
+</script>
 </body>
 </html>

@@ -14,7 +14,6 @@ body {
 .page { position: absolute; inset: 0; display: none; flex-direction: column; }
 .page.active { display: flex; }
 
-/* 配置页 */
 #page-config { padding: 12px; overflow-y: auto; }
 #page-config h1 { font-size: 15px; margin: 0 0 10px; text-align: center; color: #aaa; font-weight: normal; }
 .group { background: #1a1a1a; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
@@ -24,7 +23,6 @@ body {
   display: flex; align-items: center; justify-content: center;
   background: #222; border: 1px solid #333; border-radius: 8px;
   padding: 10px 4px; font-size: 15px; color: #666;
-  transition: background .1s, color .1s, border-color .1s;
 }
 .chk-item.on { background: #2d5a8e; color: #fff; border-color: #2d7ef7; }
 .btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -36,7 +34,6 @@ button.primary { background: #2d7ef7; color: #fff; }
 button.danger { background: #6b2020; color: #eee; }
 button:active { opacity: 0.7; }
 
-/* 训练页 */
 #page-train { padding: 8px; }
 #display-area {
   flex: 1; display: flex; align-items: center; justify-content: center;
@@ -51,7 +48,6 @@ button:active { opacity: 0.7; }
 }
 .mode-btn.on { background: #2d5a8e; color: #fff; border-color: #2d7ef7; }
 
-/* 拼音子选项：单拼 / 双拼 */
 .sub-row { display: flex; gap: 6px; margin-bottom: 6px; }
 .sub-btn {
   flex: 1; padding: 8px; border-radius: 8px;
@@ -69,6 +65,7 @@ button:active { opacity: 0.7; }
 .tone-btn.on { background: #2d5a8e; color: #fff; border-color: #2d7ef7; }
 .tone-row.disabled .tone-btn { opacity: 0.35; pointer-events: none; }
 .ctrl-row { display: flex; gap: 8px; }
+.hint { font-size: 11px; color: #666; text-align: center; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -100,11 +97,12 @@ button:active { opacity: 0.7; }
 <div class="page" id="page-train">
   <div id="display-area"><div id="display-text"></div></div>
   <div class="mode-row" id="mode-row"></div>
-  <!-- 拼音子选项：只在“拼音混合”模式下显示 -->
   <div class="sub-row" id="pinyin-options" style="display:none;">
-    <div class="sub-btn on" data-opt="single">单拼</div>
-    <div class="sub-btn on" data-opt="double">双拼</div>
+    <div class="sub-btn on" data-opt="all">全部</div>
+    <div class="sub-btn" data-opt="single">只单拼</div>
+    <div class="sub-btn" data-opt="double">只双拼</div>
   </div>
+  <div class="hint" id="pinyin-hint" style="display:none;">单拼=1个元音，双拼=2个及以上元音</div>
   <div class="tone-row" id="tone-row">
     <div class="tone-btn" data-tone="0">一声 ˉ</div>
     <div class="tone-btn" data-tone="1">二声 ˊ</div>
@@ -121,13 +119,16 @@ button:active { opacity: 0.7; }
 // ============ 数据 ============
 const SHENGMU = ["b","p","m","f","d","t","n","l","g","k","h","j","q","x","zh","ch","sh","r","z","c","s","y","w"];
 
+// 完整韵母表（含三拼音节介母组合）
 const YUNMU_TONES = {
+  // 单韵母
   "a": ["ā","á","ǎ","à"],
   "o": ["ō","ó","ǒ","ò"],
   "e": ["ē","é","ě","è"],
   "i": ["ī","í","ǐ","ì"],
   "u": ["ū","ú","ǔ","ù"],
   "ü": ["ǖ","ǘ","ǚ","ǜ"],
+  // 复韵母
   "ai": ["āi","ái","ǎi","ài"],
   "ei": ["ēi","éi","ěi","èi"],
   "ui": ["uī","uí","uǐ","uì"],
@@ -137,15 +138,29 @@ const YUNMU_TONES = {
   "ie": ["iē","ié","iě","iè"],
   "üe": ["üē","üé","üě","üè"],
   "er": ["ēr","ér","ěr","èr"],
+  // 前鼻韵母
   "an": ["ān","án","ǎn","àn"],
   "en": ["ēn","én","ěn","èn"],
   "in": ["īn","ín","ǐn","ìn"],
   "un": ["ūn","ún","ǔn","ùn"],
   "ün": ["ǖn","ǘn","ǚn","ǜn"],
+  // 后鼻韵母
   "ang": ["āng","áng","ǎng","àng"],
   "eng": ["ēng","éng","ěng","èng"],
   "ing": ["īng","íng","ǐng","ìng"],
   "ong": ["ōng","óng","ǒng","òng"],
+  // 三拼音节（介母 + 韵母）
+  "ia":  ["iā","iá","iǎ","ià"],
+  "iao": ["iāo","iáo","iǎo","iào"],
+  "ian": ["iān","ián","iǎn","iàn"],
+  "iang":["iāng","iáng","iǎng","iàng"],
+  "iong":["iōng","ióng","iǒng","iòng"],
+  "ua":  ["uā","uá","uǎ","uà"],
+  "uo":  ["uō","uó","uǒ","uò"],
+  "uai": ["uāi","uái","uǎi","uài"],
+  "uan": ["uān","uán","uǎn","uàn"],
+  "uang":["uāng","uáng","uǎng","uàng"],
+  "üan": ["üān","üán","üǎn","üàn"],
 };
 
 const VALID_RAW = `
@@ -186,7 +201,6 @@ const TONE_TO_BASE = {
 const UMLAUT_TO_U = { "ü":"u","ǖ":"ū","ǘ":"ú","ǚ":"ǔ","ǜ":"ù" };
 const UMLAUT_SONORANTS = new Set(["j","q","x","y"]);
 
-// 元音字母集合（含带声调形式）
 const VOWEL_CHARS = new Set([
   "a","o","e","i","u","ü",
   "ā","á","ǎ","à",
@@ -211,7 +225,6 @@ function applySpelling(sm, ymTone) {
   }
   return sm + ymTone;
 }
-// 数一个拼音里元音字母的个数
 function countVowels(str) {
   let n = 0;
   for (const ch of str) if (VOWEL_CHARS.has(ch)) n++;
@@ -224,8 +237,7 @@ const state = {
   selectedSM: new Set(SHENGMU),
   selectedYM: new Set(Object.keys(YUNMU_TONES)),
   tones: [true, true, true, true],
-  pinyinSingle: true,   // 单拼
-  pinyinDouble: true,   // 双拼
+  pinyinFilter: "all",   // all | single | double
   pool: [],
   queue: [],
   current: "",
@@ -274,17 +286,13 @@ Object.entries(MODE_NAMES).forEach(([k, name]) => {
   modeRow.appendChild(el);
 });
 
-// ============ 训练页：单拼 / 双拼 子选项 ============
+// ============ 训练页：单拼/双拼 互斥按钮 ============
 document.querySelectorAll("#pinyin-options .sub-btn").forEach(el => {
   el.onclick = () => {
-    const opt = el.dataset.opt;
-    if (opt === "single") {
-      state.pinyinSingle = !state.pinyinSingle;
-      el.classList.toggle("on", state.pinyinSingle);
-    } else {
-      state.pinyinDouble = !state.pinyinDouble;
-      el.classList.toggle("on", state.pinyinDouble);
-    }
+    state.pinyinFilter = el.dataset.opt;
+    document.querySelectorAll("#pinyin-options .sub-btn").forEach(b => {
+      b.classList.toggle("on", b.dataset.opt === state.pinyinFilter);
+    });
     if (state.mode === "pinyin") rebuildPool();
   };
 });
@@ -326,10 +334,8 @@ function buildPoolForMode(mode) {
           if (!isValidSyllable(sm, t)) return;
           const result = applySpelling(sm, t);
           const vc = countVowels(result);
-          // 单拼：只有 1 个元音字母
-          if (vc === 1 && !state.pinyinSingle) return;
-          // 双拼：有 2 个或更多元音字母
-          if (vc >= 2 && !state.pinyinDouble) return;
+          if (state.pinyinFilter === "single" && vc !== 1) return;
+          if (state.pinyinFilter === "double" && vc < 2) return;
           out.push(result);
         });
       });
@@ -388,9 +394,9 @@ function switchMode(mode) {
     el.classList.toggle("on", el.dataset.value === mode);
   });
   toneRow.classList.toggle("disabled", mode !== "yunmu_tone");
-  // 只在“拼音混合”模式下显示 单拼/双拼
-  document.getElementById("pinyin-options").style.display =
-    (mode === "pinyin") ? "flex" : "none";
+  const show = (mode === "pinyin");
+  document.getElementById("pinyin-options").style.display = show ? "flex" : "none";
+  document.getElementById("pinyin-hint").style.display = show ? "block" : "none";
   rebuildPool();
 }
 

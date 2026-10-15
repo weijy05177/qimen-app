@@ -2,392 +2,377 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>奇门排盘</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>拼音训练</title>
 <style>
-  * { box-sizing: border-box; }
-  body {
-    background: #111;
-    color: #eee;
-    font-family: system-ui, -apple-system, sans-serif;
-    margin: 0;
-    padding: 12px;
-    font-size: 14px;
-  }
-  h1 { font-size: 18px; text-align: center; margin: 8px 0 12px; }
-  .panel {
-    background: #1a1a1a;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-  label { display: block; margin-bottom: 4px; color: #aaa; font-size: 12px; }
-  input, select {
-    width: 100%;
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #333;
-    background: #222;
-    color: #eee;
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
-  button {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    background: #2d7ef7;
-    color: #fff;
-    font-size: 15px;
-    font-weight: bold;
-  }
-  button:active { background: #1a5fc4; }
-  .info {
-    font-size: 13px;
-    line-height: 1.7;
-    color: #ccc;
-    white-space: pre-wrap;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-top: 8px;
-  }
-  .gong {
-    background: #1e1e1e;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 6px;
-    min-height: 96px;
-    font-size: 11px;
-    line-height: 1.5;
-  }
-  .gong .pos { color: #888; font-size: 10px; }
-  .gong .shen { color: #f7c948; }
-  .gong .xing { color: #7ec8e3; }
-  .gong .tian { color: #ff9f7f; }
-  .gong .men { color: #a6e3a1; }
-  .gong .di { color: #cba6f7; }
-  .gong .ge { color: #ff6b6b; font-weight: bold; }
-  .center {
-    background: #2a2a2a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    font-size: 12px;
-  }
-  .ge-list {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #ff6b6b;
-    line-height: 1.6;
-  }
-  .footer { text-align: center; color: #555; font-size: 11px; margin: 12px 0; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #111; color: #eee; overflow: hidden; user-select: none;
+}
+.page { position: absolute; inset: 0; display: none; flex-direction: column; }
+.page.active { display: flex; }
+
+/* 配置页 */
+#page-config { padding: 12px; overflow-y: auto; }
+#page-config h1 { font-size: 15px; margin: 0 0 10px; text-align: center; color: #aaa; font-weight: normal; }
+.group { background: #1a1a1a; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+.group h2 { font-size: 14px; margin: 0 0 8px; color: #7ec8e3; font-weight: normal; }
+.chk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; }
+.chk-item {
+  display: flex; align-items: center; justify-content: center;
+  background: #222; border: 1px solid #333; border-radius: 8px;
+  padding: 10px 4px; font-size: 15px; color: #666;
+  transition: background .1s, color .1s, border-color .1s;
+}
+.chk-item.on { background: #2d5a8e; color: #fff; border-color: #2d7ef7; }
+.btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
+button {
+  flex: 1; padding: 12px; border: none; border-radius: 10px;
+  background: #333; color: #eee; font-size: 15px; font-weight: bold;
+}
+button.primary { background: #2d7ef7; color: #fff; }
+button.danger { background: #6b2020; color: #eee; }
+button:active { opacity: 0.7; }
+
+/* 训练页 */
+#page-train { padding: 8px; }
+#display-area {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  min-height: 0;
+}
+#display-text { font-weight: bold; color: #fff; text-align: center; line-height: 1; }
+.mode-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.mode-btn {
+  flex: 1; min-width: 70px; padding: 8px 4px; border-radius: 8px;
+  background: #222; color: #888; font-size: 12px; text-align: center;
+  border: 1px solid #333;
+}
+.mode-btn.on { background: #2d5a8e; color: #fff; border-color: #2d7ef7; }
+.tone-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.tone-btn {
+  flex: 1; padding: 8px; border-radius: 8px;
+  background: #222; color: #666; border: 1px solid #333;
+  font-size: 13px; text-align: center;
+}
+.tone-btn.on { background: #2d5a8e; color: #fff; border-color: #2d7ef7; }
+.tone-row.disabled .tone-btn { opacity: 0.35; pointer-events: none; }
+.ctrl-row { display: flex; gap: 8px; }
 </style>
 </head>
 <body>
 
-<h1>奇门遁甲排盘</h1>
-
-<div class="panel">
-  <label>公历日期</label>
-  <input type="date" id="dateInput">
-  <label>时间（24小时制）</label>
-  <input type="time" id="timeInput">
-  <button onclick="paipan()">开始排盘</button>
+<!-- 配置页 -->
+<div class="page active" id="page-config">
+  <h1>选择要练习的拼音（勾选后点击“开始训练”）</h1>
+  <div class="group">
+    <h2>声母</h2>
+    <div class="chk-grid" id="sm-grid"></div>
+  </div>
+  <div class="group">
+    <h2>韵母</h2>
+    <div class="chk-grid" id="ym-grid"></div>
+  </div>
+  <div class="btn-row">
+    <button id="btn-all">全部选中</button>
+    <button id="btn-none">全部取消</button>
+  </div>
+  <div class="btn-row">
+    <button class="primary" id="btn-start">开始训练</button>
+  </div>
+  <div class="btn-row">
+    <button class="danger" id="btn-exit">退出应用</button>
+  </div>
 </div>
 
-<div class="panel" id="result" style="display:none;">
-  <div class="info" id="info"></div>
-  <div class="grid" id="grid"></div>
-  <div class="ge-list" id="geList"></div>
+<!-- 训练页 -->
+<div class="page" id="page-train">
+  <div id="display-area"><div id="display-text"></div></div>
+  <div class="mode-row" id="mode-row"></div>
+  <div class="tone-row" id="tone-row">
+    <div class="tone-btn" data-tone="0">一声 ˉ</div>
+    <div class="tone-btn" data-tone="1">二声 ˊ</div>
+    <div class="tone-btn" data-tone="2">三声 ˇ</div>
+    <div class="tone-btn" data-tone="3">四声 ˋ</div>
+  </div>
+  <div class="ctrl-row">
+    <button id="btn-next">下一个</button>
+    <button id="btn-back">返回配置</button>
+  </div>
 </div>
-
-<div class="footer">奇门排盘 · 仅供学习参考</div>
 
 <script>
-// ==================== 基础常量 ====================
-const GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
-const ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-const GAN_WX = {甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水'};
-const ZHI_WX = {子:'水',丑:'土',寅:'木',卯:'木',辰:'土',巳:'火',午:'火',未:'土',申:'金',酉:'金',戌:'土',亥:'水'};
+// ============ 数据 ============
+const SHENGMU = ["b","p","m","f","d","t","n","l","g","k","h","j","q","x","zh","ch","sh","r","z","c","s","y","w"];
 
-// 九宫位置（洛书）
-const GONG_POS = {
-  4:'东南', 9:'正南', 2:'西南',
-  3:'正东', 5:'中央', 7:'正西',
-  8:'东北', 1:'正北', 6:'西北'
+const YUNMU_TONES = {
+  "a": ["ā","á","ǎ","à"],
+  "o": ["ō","ó","ǒ","ò"],
+  "e": ["ē","é","ě","è"],
+  "i": ["ī","í","ǐ","ì"],
+  "u": ["ū","ú","ǔ","ù"],
+  "ü": ["ǖ","ǘ","ǚ","ǜ"],
+  "ai": ["āi","ái","ǎi","ài"],
+  "ei": ["ēi","éi","ěi","èi"],
+  "ui": ["uī","uí","uǐ","uì"],
+  "ao": ["āo","áo","ǎo","ào"],
+  "ou": ["ōu","óu","ǒu","òu"],
+  "iu": ["iū","iú","iǔ","iù"],
+  "ie": ["iē","ié","iě","iè"],
+  "üe": ["üē","üé","üě","üè"],
+  "er": ["ēr","ér","ěr","èr"],
+  "an": ["ān","án","ǎn","àn"],
+  "en": ["ēn","én","ěn","èn"],
+  "in": ["īn","ín","ǐn","ìn"],
+  "un": ["ūn","ún","ǔn","ùn"],
+  "ün": ["ǖn","ǘn","ǚn","ǜn"],
+  "ang": ["āng","áng","ǎng","àng"],
+  "eng": ["ēng","éng","ěng","èng"],
+  "ing": ["īng","íng","ǐng","ìng"],
+  "ong": ["ōng","óng","ǒng","òng"],
 };
 
-// 地盘三奇六仪固定顺序（阳遁顺布，阴遁逆布）
-const DIPAN_ORDER = ['戊','己','庚','辛','壬','癸','丁','丙','乙'];
+const VALID_RAW = `
+ba bo bi bu bai bei bao ban ben bang beng bian biao bie bin bing
+pa po pi pu pai pei pao pou pan pen pang peng pian piao pie pin ping
+ma mo me mi mu mai mei mao mou man men mang meng mian miao mie miu min ming
+fa fo fu fei fou fan fen fang feng
+da de di du dai dei dao dou dan den dang deng dong die diu dian ding duan dui dun
+ta te ti tu tai tao tou tan tang teng tong tie tian ting tuan tui tun
+na ne ni nu nü nai nei nao nou nan nen nang neng nong nie niu nian nin niang ning nuan nüe nuo nun
+la le li lu lü lai lei lao lou lan lang leng long lie liu lian lin liang ling luan lüe luo lun
+ga ge gu gai gei gao gou gan gen gang geng gong gua guo guai gui guan gun guang
+ka ke ku kai kei kao kou kan ken kang keng kong kua kuo kuai kui kuan kun kuang
+ha he hu hai hei hao hou han hen hang heng hong hua huo huai hui huan hun huang
+ji ju jia jie jiu jiao jian jin jiang jing jiong jue juan jun
+qi qu qia qie qiu qiao qian qin qiang qing qiong que quan qun
+xi xu xia xie xiu xiao xian xin xiang xing xiong xue xuan xun
+zha zhe zhi zhu zhai zhei zhao zhou zhan zhen zhang zheng zhong zhua zhuo zhuai zhui zhuan zhun zhuang
+cha che chi chu chai chao chou chan chen chang cheng chong chua chuo chuai chui chuan chun chuang
+sha she shi shu shai shei shao shou shan shen shang sheng shua shuo shuai shui shuan shun shuang
+re ri ru rao rou ran ren rang reng rong rua ruo rui ruan run
+za ze zi zu zai zei zao zou zan zen zang zeng zong zuo zui zuan zun
+ca ce ci cu cai cao cou can cen cang ceng cong cuo cui cuan cun
+sa se si su sai sao sou san sen sang seng song suo sui suan sun
+ya ye yi yo yu yao you yan yin yang ying yong yue yuan yun
+wa wo wu wai wei wan wen wang weng
+`;
+const VALID_SYLLABLES = new Set(VALID_RAW.trim().split(/\s+/));
 
-// 九星
-const JIUXING = ['天蓬','天任','天冲','天辅','天英','天芮','天柱','天心'];
-// 八门
-const BAMEN = ['休门','生门','伤门','杜门','景门','死门','惊门','开门'];
-// 八神（阳顺阴逆）
-const BASHEN_YANG = ['值符','螣蛇','太阴','六合','白虎','玄武','九地','九天'];
-const BASHEN_YIN  = ['值符','九天','九地','玄武','白虎','六合','太阴','螣蛇'];
+const TONE_TO_BASE = {
+  "ā":"a","á":"a","ǎ":"a","à":"a",
+  "ō":"o","ó":"o","ǒ":"o","ò":"o",
+  "ē":"e","é":"e","ě":"e","è":"e",
+  "ī":"i","í":"i","ǐ":"i","ì":"i",
+  "ū":"u","ú":"u","ǔ":"u","ù":"u",
+  "ǖ":"ü","ǘ":"ü","ǚ":"ü","ǜ":"ü"
+};
+const UMLAUT_TO_U = { "ü":"u","ǖ":"ū","ǘ":"ú","ǚ":"ǔ","ǜ":"ù" };
+const UMLAUT_SONORANTS = new Set(["j","q","x","y"]);
 
-// 节气名称
-const JIEQI = ['小寒','大寒','立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至','小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至'];
-
-// ==================== 干支计算 ====================
-function jiaziIndex(gan, zhi) {
-  for (let i = 0; i < 60; i++) {
-    if (GAN[i % 10] === gan && ZHI[i % 12] === zhi) return i;
+function removeTone(text) {
+  return [...text].map(c => TONE_TO_BASE[c] || c).join("");
+}
+function isValidSyllable(sm, ymTone) {
+  let base = removeTone(ymTone);
+  if (UMLAUT_SONORANTS.has(sm) && base.startsWith("ü")) base = "u" + base.slice(1);
+  return VALID_SYLLABLES.has(sm + base);
+}
+function applySpelling(sm, ymTone) {
+  if (UMLAUT_SONORANTS.has(sm) && UMLAUT_TO_U[ymTone[0]]) {
+    return sm + UMLAUT_TO_U[ymTone[0]] + ymTone.slice(1);
   }
-  return 0;
+  return sm + ymTone;
 }
 
-function getGanZhiYear(y) {
-  const idx = (y - 4) % 60;
-  return GAN[idx % 10] + ZHI[idx % 12];
-}
+// ============ 状态 ============
+const state = {
+  mode: "shengmu",
+  selectedSM: new Set(SHENGMU),
+  selectedYM: new Set(Object.keys(YUNMU_TONES)),
+  tones: [true, true, true, true],
+  pool: [],
+  queue: [],
+  current: "",
+};
 
-function getGanZhiDay(y, m, d) {
-  // 以 2000-01-01 为戊午日（索引 54）推算
-  const base = new Date(2000, 0, 1);
-  const cur = new Date(y, m - 1, d);
-  const diff = Math.floor((cur - base) / 86400000);
-  const idx = ((54 + diff) % 60 + 60) % 60;
-  return GAN[idx % 10] + ZHI[idx % 12];
-}
+const MODE_NAMES = {
+  shengmu: "声母训练",
+  yunmu: "韵母训练",
+  yunmu_tone: "韵母按声调",
+  pinyin: "拼音混合"
+};
 
-function getGanZhiHour(dayGan, hour) {
-  const zhiIdx = Math.floor((hour + 1) / 2) % 12;
-  const dayGanIdx = GAN.indexOf(dayGan);
-  const startGan = (dayGanIdx % 5) * 2;
-  const ganIdx = (startGan + zhiIdx) % 10;
-  return GAN[ganIdx] + ZHI[zhiIdx];
-}
+// ============ 配置页：复选框 ============
+const smGrid = document.getElementById("sm-grid");
+SHENGMU.forEach(sm => {
+  const el = document.createElement("div");
+  el.className = "chk-item on";
+  el.textContent = sm;
+  el.onclick = () => {
+    if (state.selectedSM.has(sm)) { state.selectedSM.delete(sm); el.classList.remove("on"); }
+    else { state.selectedSM.add(sm); el.classList.add("on"); }
+  };
+  smGrid.appendChild(el);
+});
 
-// ==================== 简化节气计算 ====================
-// 用近似公式估算节气，误差约1天，够排盘用
-function getJieQiIndex(y, m, d) {
-  // 每月两个节气，粗略对应日期
-  const monthJie = [6, 21]; // 每月第一个节气约6号，第二个约21号
-  const base = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11];
-  // 更精确的近似：用年积日
-  const start = new Date(y, 0, 1);
-  const cur = new Date(y, m - 1, d);
-  const dayOfYear = Math.floor((cur - start) / 86400000) + 1;
+const ymGrid = document.getElementById("ym-grid");
+Object.keys(YUNMU_TONES).forEach(ym => {
+  const el = document.createElement("div");
+  el.className = "chk-item on";
+  el.textContent = ym;
+  el.onclick = () => {
+    if (state.selectedYM.has(ym)) { state.selectedYM.delete(ym); el.classList.remove("on"); }
+    else { state.selectedYM.add(ym); el.classList.add("on"); }
+  };
+  ymGrid.appendChild(el);
+});
 
-  // 24节气大致日期（非闰年）
-  const jqDays = [6,20,4,19,6,21,5,20,6,21,6,21,7,23,8,23,8,23,8,23,7,22,7,22];
-  let idx = 0;
-  for (let i = 0; i < 24; i++) {
-    if (dayOfYear >= jqDays[i]) idx = i;
+// ============ 训练页：模式按钮 ============
+const modeRow = document.getElementById("mode-row");
+Object.entries(MODE_NAMES).forEach(([k, name]) => {
+  const el = document.createElement("div");
+  el.className = "mode-btn" + (k === "shengmu" ? " on" : "");
+  el.dataset.value = k;
+  el.textContent = name;
+  el.onclick = () => switchMode(k);
+  modeRow.appendChild(el);
+});
+
+// ============ 训练页：声调按钮 ============
+const toneRow = document.getElementById("tone-row");
+document.querySelectorAll(".tone-btn").forEach(el => {
+  el.classList.add("on");
+  el.onclick = () => {
+    const i = parseInt(el.dataset.tone);
+    state.tones[i] = !state.tones[i];
+    el.classList.toggle("on", state.tones[i]);
+    if (state.mode === "yunmu_tone") rebuildPool();
+  };
+});
+
+// ============ 逻辑 ============
+function buildPoolForMode(mode) {
+  const sms = [...state.selectedSM];
+  const yms = [...state.selectedYM];
+  if (mode === "shengmu") return [...sms];
+  if (mode === "yunmu") {
+    const out = [];
+    yms.forEach(ym => out.push(...YUNMU_TONES[ym]));
+    return out;
   }
-  // 处理跨年
-  if (dayOfYear < jqDays[0]) idx = 23;
-  return idx;
+  if (mode === "yunmu_tone") {
+    const idx = state.tones.map((v,i)=>v?i:-1).filter(i=>i>=0);
+    if (!idx.length) return [];
+    const out = [];
+    yms.forEach(ym => idx.forEach(i => out.push(YUNMU_TONES[ym][i])));
+    return out;
+  }
+  if (mode === "pinyin") {
+    const out = [];
+    sms.forEach(sm => {
+      yms.forEach(ym => {
+        YUNMU_TONES[ym].forEach(t => {
+          if (isValidSyllable(sm, t)) out.push(applySpelling(sm, t));
+        });
+      });
+    });
+    return out;
+  }
+  return [];
 }
 
-// 节气对应局数（上中下元简化，取上元局数）
-function getJuShu(jqIdx) {
-  const table = [2,3,8,9,1,3,4,5,4,5,6,9,8,7,2,1,9,7,6,5,6,5,4,1];
-  return table[jqIdx];
+function refillQueue() {
+  state.queue = [...state.pool];
+  for (let i = state.queue.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [state.queue[i], state.queue[j]] = [state.queue[j], state.queue[i]];
+  }
 }
 
-// 阴阳遁：冬至到夏至前为阳遁，夏至到冬至前为阴遁
-function getYinYang(jqIdx) {
-  // 冬至索引23，夏至索引11
-  if (jqIdx >= 23 || jqIdx < 11) return '阳';
-  return '阴';
+function nextChar() {
+  if (!state.queue.length) refillQueue();
+  if (!state.queue.length) return;
+  state.current = state.queue.pop();
+  document.getElementById("display-text").textContent = state.current;
+  adjustFont();
 }
 
-// ==================== 排盘核心 ====================
-function paipan() {
-  const dateVal = document.getElementById('dateInput').value;
-  const timeVal = document.getElementById('timeInput').value;
-  if (!dateVal || !timeVal) {
-    alert('请选择日期和时间');
+function adjustFont() {
+  const el = document.getElementById("display-text");
+  const area = document.getElementById("display-area");
+  const w = area.clientWidth, h = area.clientHeight;
+  if (!w || !h) return;
+  let best = 20, lo = 20, hi = Math.min(w, h);
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    el.style.fontSize = mid + "px";
+    const r = el.getBoundingClientRect();
+    if (r.width <= w * 0.85 && r.height <= h * 0.85) { best = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+  el.style.fontSize = best + "px";
+}
+
+function rebuildPool() {
+  state.pool = buildPoolForMode(state.mode);
+  if (!state.pool.length) {
+    alert("当前模式下没有可用的拼音，请检查配置。");
+    return false;
+  }
+  refillQueue();
+  nextChar();
+  return true;
+}
+
+function switchMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll(".mode-btn").forEach(el => {
+    el.classList.toggle("on", el.dataset.value === mode);
+  });
+  toneRow.classList.toggle("disabled", mode !== "yunmu_tone");
+  rebuildPool();
+}
+
+function showPage(name) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-" + name).classList.add("active");
+  if (name === "train") setTimeout(adjustFont, 60);
+}
+
+// ============ 配置页按钮 ============
+document.getElementById("btn-all").onclick = () => {
+  document.querySelectorAll("#sm-grid .chk-item, #ym-grid .chk-item").forEach(el => el.classList.add("on"));
+  state.selectedSM = new Set(SHENGMU);
+  state.selectedYM = new Set(Object.keys(YUNMU_TONES));
+};
+document.getElementById("btn-none").onclick = () => {
+  document.querySelectorAll("#sm-grid .chk-item, #ym-grid .chk-item").forEach(el => el.classList.remove("on"));
+  state.selectedSM.clear();
+  state.selectedYM.clear();
+};
+document.getElementById("btn-start").onclick = () => {
+  if (!state.selectedSM.size && !state.selectedYM.size) {
+    alert("请至少选择一个声母或韵母。");
     return;
   }
-  const [y, m, d] = dateVal.split('-').map(Number);
-  const [hh] = timeVal.split(':').map(Number);
+  if (!rebuildPool()) return;
+  showPage("train");
+};
+document.getElementById("btn-exit").onclick = () => {
+  if (window.Android && window.Android.exit) window.Android.exit();
+  else if (confirm("确定要退出吗？")) window.close();
+};
 
-  const yearGZ = getGanZhiYear(y);
-  const dayGZ = getGanZhiDay(y, m, d);
-  const dayGan = dayGZ[0];
-  const hourGZ = getGanZhiHour(dayGan, hh);
+// ============ 训练页按钮 ============
+document.getElementById("display-area").onclick = nextChar;
+document.getElementById("btn-next").onclick = nextChar;
+document.getElementById("btn-back").onclick = () => showPage("config");
 
-  // 月柱简化：按节气月
-  const jqIdx = getJieQiIndex(y, m, d);
-  const yinYang = getYinYang(jqIdx);
-  const juShu = getJuShu(jqIdx);
-
-  // 旬首
-  const hourIdx = jiaziIndex(hourGZ[0], hourGZ[1]);
-  const xunStart = Math.floor(hourIdx / 10) * 10;
-  const xunShou = GAN[xunStart % 10];
-  const dunGan = xunShou === '甲' ? GAN[(xunStart + 1) % 10] : xunShou;
-  // 甲子戊、甲戌己、甲申庚、甲午辛、甲辰壬、甲寅癸
-  const dunMap = {'甲子':'戊','甲戌':'己','甲申':'庚','甲午':'辛','甲辰':'壬','甲寅':'癸'};
-  const xunName = '甲' + ZHI[(xunStart + (xunStart===0?0:xunStart)) % 12];
-  const xunGan = dunMap[GAN[xunStart%10]+ZHI[xunStart%12]] || '戊';
-
-  // 排地盘：从局数宫开始，阳顺阴逆布三奇六仪
-  const dipan = {};
-  let startGong = juShu;
-  for (let i = 0; i < 9; i++) {
-    let g;
-    if (yinYang === '阳') {
-      g = ((startGong - 1 + i) % 9) + 1;
-    } else {
-      g = ((startGong - 1 - i) % 9 + 9) % 9 + 1;
-    }
-    dipan[g] = DIPAN_ORDER[i];
-  }
-
-  // 找值符：地盘上旬首对应的宫
-  let zhifuGong = 1;
-  for (let g = 1; g <= 9; g++) {
-    if (dipan[g] === xunGan) { zhifuGong = g; break; }
-  }
-
-  // 天盘：把地盘整体旋转，使值符落到时干所在宫
-  // 时干在地盘的位置
-  let shiganGong = 1;
-  for (let g = 1; g <= 9; g++) {
-    if (dipan[g] === hourGZ[0]) { shiganGong = g; break; }
-  }
-
-  // 计算旋转量
-  const tianpan = {};
-  for (let g = 1; g <= 9; g++) {
-    if (g === 5) continue; // 中宫寄坤
-    // 天盘某宫 = 地盘对应宫
-    const offset = ((g - shiganGong) % 9 + 9) % 9;
-    let srcGong;
-    if (yinYang === '阳') {
-      srcGong = ((zhifuGong - 1 + offset) % 9) + 1;
-    } else {
-      srcGong = ((zhifuGong - 1 - offset) % 9 + 9) % 9 + 1;
-    }
-    if (srcGong === 5) srcGong = 2;
-    tianpan[g] = dipan[srcGong];
-  }
-
-  // 值使门：旬首对应八门
-  const menOrder = ['休','生','伤','杜','景','死','惊','开'];
-  const zhifuMenIdx = (zhifuGong - 1) % 8;
-  const zhishiMen = menOrder[zhifuMenIdx];
-
-  // 排八门：从值使门起，按时辰数飞布
-  const bamen = {};
-  const hourNum = ZHI.indexOf(hourGZ[1]);
-  for (let g = 1; g <= 9; g++) {
-    if (g === 5) continue;
-    let step;
-    if (yinYang === '阳') {
-      step = ((g - zhifuGong) % 9 + 9) % 9;
-    } else {
-      step = ((zhifuGong - g) % 9 + 9) % 9;
-    }
-    const idx = (zhifuMenIdx + step) % 8;
-    bamen[g] = menOrder[idx] + '门';
-  }
-
-  // 排九星：值符星随时干，其余顺布
-  const xingOrder = ['天蓬','天任','天冲','天辅','天英','天芮','天柱','天心'];
-  const jiuxing = {};
-  for (let g = 1; g <= 9; g++) {
-    if (g === 5) continue;
-    let step;
-    if (yinYang === '阳') {
-      step = ((g - zhifuGong) % 9 + 9) % 9;
-    } else {
-      step = ((zhifuGong - g) % 9 + 9) % 9;
-    }
-    jiuxing[g] = xingOrder[step % 8];
-  }
-
-  // 排八神
-  const bashen = {};
-  for (let g = 1; g <= 9; g++) {
-    if (g === 5) continue;
-    let step;
-    if (yinYang === '阳') {
-      step = ((g - zhifuGong) % 9 + 9) % 9;
-    } else {
-      step = ((zhifuGong - g) % 9 + 9) % 9;
-    }
-    bashen[g] = (yinYang === '阳' ? BASHEN_YANG : BASHEN_YIN)[step % 8];
-  }
-
-  // 格局识别
-  const ges = [];
-  const geRules = [
-    {a:'庚', b:'壬', name:'小格', note:'主走失、遗失'},
-    {a:'乙', b:'辛', name:'青龙逃走', note:'主人走财散、逃亡'},
-    {a:'癸', b:'丁', name:'螣蛇夭矫', note:'主怪异虚惊、梦魇'},
-    {a:'辛', b:'乙', name:'白虎猖狂', note:'主刀伤、车祸'},
-    {a:'壬', b:'癸', name:'幼女奸淫', note:'主淫乱、暗昧'},
-    {a:'丁', b:'癸', name:'朱雀投江', note:'主口舌、文书失'},
-    {a:'己', b:'庚', name:'刑格', note:'主刑罚、官非'},
-    {a:'庚', b:'癸', name:'大格', note:'主车祸、走失'},
-    {a:'庚', b:'己', name:'刑格', note:'主刑罚'},
-  ];
-  for (let g = 1; g <= 9; g++) {
-    if (g === 5) continue;
-    const t = tianpan[g], d = dipan[g];
-    for (const r of geRules) {
-      if (t === r.a && d === r.b) {
-        ges.push(`${r.name}（凶）· ${GONG_POS[g]}宫 [${t}+${d}]：${r.note}`);
-      }
-    }
-  }
-
-  // 渲染
-  document.getElementById('info').textContent =
-    `公历：${y}年${m}月${d}日 ${hh}时\n` +
-    `四柱：${yearGZ}年  ${'?'}月  ${dayGZ}日  ${hourGZ}时\n` +
-    `节气：${JIEQI[jqIdx]}\n` +
-    `局数：${yinYang}遁${juShu}局\n` +
-    `旬首：甲${ZHI[xunStart%12]}（遁干 ${xunGan}）\n` +
-    `值符：${jiuxing[zhifuGong] || '天英'}    值使：${bamen[zhifuGong] || '景门'}`;
-
-  const grid = document.getElementById('grid');
-  const order = [4,9,2,3,5,7,8,1,6];
-  grid.innerHTML = '';
-  for (const g of order) {
-    const div = document.createElement('div');
-    div.className = 'gong' + (g === 5 ? ' center' : '');
-    if (g === 5) {
-      div.innerHTML = `<div class="pos">中五宫</div><div>寄坤二宫</div>`;
-    } else {
-      div.innerHTML =
-        `<div class="pos">${GONG_POS[g]}宫</div>` +
-        `<div class="shen">${bashen[g] || ''}</div>` +
-        `<div class="xing">${jiuxing[g] || ''}</div>` +
-        `<div class="tian">天盘：${tianpan[g] || ''}</div>` +
-        `<div class="men">${bamen[g] || ''}</div>` +
-        `<div class="di">地盘：${dipan[g] || ''}</div>`;
-    }
-    grid.appendChild(div);
-  }
-
-  document.getElementById('geList').innerHTML =
-    ges.length ? '【格局识别】<br>' + ges.join('<br>') : '【格局识别】无明显凶格';
-
-  document.getElementById('result').style.display = 'block';
-}
-
-// 默认填当前时间
-(function init() {
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  document.getElementById('dateInput').value =
-    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  document.getElementById('timeInput').value =
-    `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-})();
+// ============ 自适应 ============
+window.addEventListener("resize", adjustFont);
+window.addEventListener("orientationchange", () => setTimeout(adjustFont, 120));
 </script>
 </body>
 </html>

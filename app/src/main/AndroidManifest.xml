@@ -5,7 +5,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="奇门排盘"
+        android:label="拼音训练"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
         <activity
